@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+.DS_Store
+
+# Speculos app binaries are fetched manually through Ledger's documented flow.
+apps/
+!apps/.gitkeep

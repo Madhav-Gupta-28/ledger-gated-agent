@@ -1,0 +1,31 @@
+{
+  "name": "ledger-gated-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A Speculos-backed Ledger DMK CLI agent where AI proposes and the hardware screen disposes.",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest",
+    "@ledgerhq/context-module": "latest",
+    "@ledgerhq/device-management-kit": "latest",
+    "@ledgerhq/device-signer-kit-ethereum": "latest",
+    "@ledgerhq/device-transport-kit-speculos": "latest",
+    "dotenv": "latest",
+    "rxjs": "latest",
+    "viem": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "tsx": "latest",
+    "typescript": "latest"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
