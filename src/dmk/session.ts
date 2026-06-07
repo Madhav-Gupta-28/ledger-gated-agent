@@ -6,7 +6,8 @@ import {
   type DiscoveredDevice,
 } from "@ledgerhq/device-management-kit";
 import { speculosIdentifier } from "@ledgerhq/device-transport-kit-speculos";
-import { firstValueFrom, filter, take, timeout } from "rxjs";
+import { firstValueFrom, filter, take, timeout, TimeoutError } from "rxjs";
+import { SPECULOS_URL } from "../config.js";
 import { dmk } from "./client.js";
 
 const DISCOVERY_TIMEOUT_MS = 15_000;
@@ -29,23 +30,40 @@ async function waitForReadyState(
   sessionId: DeviceSessionId,
   timeoutMs: number,
 ): Promise<DeviceSessionState> {
-  return firstValueFrom(
-    dmk.getDeviceSessionState({ sessionId }).pipe(
-      filter((state) => isReadyState(state)),
-      take(1),
-      timeout({ first: timeoutMs }),
-    ),
-  );
+  try {
+    return await firstValueFrom(
+      dmk.getDeviceSessionState({ sessionId }).pipe(
+        filter((state) => isReadyState(state)),
+        take(1),
+        timeout({ first: timeoutMs }),
+      ),
+    );
+  } catch (error) {
+    if (error instanceof TimeoutError) {
+      throw new Error("Ledger session did not become ready in time.");
+    }
+    throw error;
+  }
 }
 
 async function discoverSpeculosDevice(): Promise<DiscoveredDevice> {
-  const devices = await firstValueFrom(
-    dmk.listenToAvailableDevices({ transport: speculosIdentifier }).pipe(
-      filter((list) => list.length > 0),
-      take(1),
-      timeout({ first: DISCOVERY_TIMEOUT_MS }),
-    ),
-  );
+  let devices: DiscoveredDevice[];
+  try {
+    devices = await firstValueFrom(
+      dmk.listenToAvailableDevices({ transport: speculosIdentifier }).pipe(
+        filter((list) => list.length > 0),
+        take(1),
+        timeout({ first: DISCOVERY_TIMEOUT_MS }),
+      ),
+    );
+  } catch (error) {
+    if (error instanceof TimeoutError) {
+      throw new Error(
+        `No Speculos Ledger detected at ${SPECULOS_URL}. Start Speculos with the Ethereum app before hardware-gated commands.`,
+      );
+    }
+    throw error;
+  }
 
   if (devices.length > 1) {
     throw new Error("Multiple Ledger devices detected; select one manually.");
@@ -79,16 +97,24 @@ export async function assertDeviceReady(
 }
 
 export async function openSession(): Promise<DeviceSessionId> {
-  const device = await discoverSpeculosDevice();
-  const sessionId = await dmk.connect({
-    device,
-    sessionRefresherOptions: {
-      isRefresherDisabled: false,
-      pollingInterval: 3_000,
-    },
-  });
+  let sessionId: DeviceSessionId;
+  try {
+    const device = await discoverSpeculosDevice();
+    sessionId = await dmk.connect({
+      device,
+      sessionRefresherOptions: {
+        isRefresherDisabled: false,
+        pollingInterval: 3_000,
+      },
+    });
 
-  await assertDeviceReady(sessionId);
+    await assertDeviceReady(sessionId);
+  } catch (error) {
+    throw new Error(
+      `Could not open a Speculos Ledger session at ${SPECULOS_URL}. Confirm Docker is running Speculos with apps/ethereum.elf on API port 5000. Original error: ${(error as Error).message}`,
+    );
+  }
+
   return sessionId;
 }
 

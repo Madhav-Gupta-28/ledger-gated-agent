@@ -2,7 +2,6 @@ import { type DeviceSessionId } from "@ledgerhq/device-management-kit";
 import { formatGwei } from "viem";
 import { getBalances, getOperations } from "../chain/read.js";
 import { buildTransfer } from "../chain/tx.js";
-import { getLedgerAddress, requestSignature } from "../dmk/signer.js";
 import type { EthAddress, Intent, TransferIntent } from "../types.js";
 
 type SessionProvider = () => Promise<DeviceSessionId>;
@@ -24,6 +23,7 @@ async function routeTransfer(
   getSession: SessionProvider,
 ): Promise<string> {
   const sessionId = await getSession();
+  const { getLedgerAddress, requestSignature } = await import("../dmk/signer.js");
   const ledgerAddress = await getLedgerAddress(sessionId, false);
   const transfer = await buildTransfer({
     ...intent,
@@ -80,6 +80,7 @@ export async function route(
     }
     case "address": {
       const sessionId = await getSession();
+      const { getLedgerAddress } = await import("../dmk/signer.js");
       const address = await getLedgerAddress(sessionId, intent.verifyOnDevice);
       return `Ledger address: ${address}`;
     }

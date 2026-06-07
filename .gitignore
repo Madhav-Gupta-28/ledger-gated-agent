@@ -3,6 +3,7 @@
 !.env.example
 node_modules/
 dist/
+.pnpm-store/
 .DS_Store
 
 # Speculos app binaries are fetched manually through Ledger's documented flow.

@@ -3,7 +3,6 @@ import { stdin as input, stdout as output } from "node:process";
 import { SPECULOS_URL } from "./config.js";
 import { parseIntent } from "./agent/brain.js";
 import { route } from "./agent/router.js";
-import { closeSession, openSession } from "./dmk/session.js";
 import type { Intent } from "./types.js";
 
 let activeSessionId: string | undefined;
@@ -13,6 +12,7 @@ async function getSession(): Promise<string> {
   if (activeSessionId) return activeSessionId;
 
   process.stderr.write(`Connecting to Speculos Ledger at ${SPECULOS_URL}...\n`);
+  const { openSession } = await import("./dmk/session.js");
   activeSessionId = await openSession();
   process.stderr.write("Connected to Ledger session.\n");
   return activeSessionId;
@@ -24,6 +24,7 @@ async function cleanup(exitCode = 0): Promise<never> {
 
   if (activeSessionId) {
     try {
+      const { closeSession } = await import("./dmk/session.js");
       await closeSession(activeSessionId);
       process.stderr.write("Disconnected Ledger session.\n");
     } catch (error) {
