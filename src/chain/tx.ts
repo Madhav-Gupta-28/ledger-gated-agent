@@ -20,11 +20,15 @@ export async function buildTransfer(intent: TransferIntent): Promise<BuiltTransf
     throw new Error("Transfer amount must be greater than zero.");
   }
 
-  const [nonce, gas, fees] = await Promise.all([
+  const ETH_TRANSFER_GAS = 21_000n;
+
+  const [nonce, gasResult, fees] = await Promise.all([
     client.getTransactionCount({ address: from }),
-    client.estimateGas({ account: from, to: intent.to, value }),
+    client.estimateGas({ account: from, to: intent.to, value }).catch(() => ETH_TRANSFER_GAS),
     client.estimateFeesPerGas(),
   ]);
+
+  const gas = gasResult;
 
   const maxFeePerGas = fees.maxFeePerGas ?? fees.gasPrice;
   const maxPriorityFeePerGas = fees.maxPriorityFeePerGas ?? 0n;

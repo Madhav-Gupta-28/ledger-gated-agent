@@ -7,21 +7,26 @@
   "scripts": {
     "dev": "pnpm build && node dist/index.js",
     "build": "tsc --noEmit && esbuild src/index.ts --bundle --platform=node --format=esm --target=node20 --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\" --outfile=dist/index.js",
+    "serve": "pnpm build && tsx src/server.ts",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "latest",
+    "@google/genai": "latest",
     "@ledgerhq/context-module": "latest",
     "@ledgerhq/device-management-kit": "latest",
     "@ledgerhq/device-signer-kit-ethereum": "latest",
     "@ledgerhq/device-transport-kit-speculos": "latest",
     "dotenv": "latest",
+    "express": "^5.2.1",
     "rxjs": "latest",
-    "viem": "latest"
+    "viem": "latest",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "latest",
+    "@types/ws": "^8.18.1",
     "esbuild": "^0.28.0",
     "tsx": "latest",
     "typescript": "latest"

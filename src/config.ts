@@ -10,9 +10,9 @@ export const SPECULOS_URL =
 export const RPC_URL = process.env.RPC_URL?.trim();
 export const WATCH_ADDRESS = process.env.WATCH_ADDRESS?.trim();
 export const LEDGER_ORIGIN_TOKEN = process.env.LEDGER_ORIGIN_TOKEN?.trim();
-export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY?.trim();
-export const ANTHROPIC_MODEL =
-  process.env.ANTHROPIC_MODEL?.trim() || "claude-sonnet-4-5-20250929";
+export const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
+export const GEMINI_MODEL =
+  process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
 
 const chainId = Number(process.env.CHAIN_ID || 11155111);
 const chainName = process.env.CHAIN_NAME?.trim() || "sepolia";
