@@ -74,6 +74,15 @@ function validateIntent(value: unknown): Intent {
   }
 }
 
+function isTransient(error: unknown): boolean {
+  const message = (error as Error)?.message ?? "";
+  return /\b(429|500|502|503|504)\b|unavailable|overloaded|high demand|rate.?limit/i.test(
+    message,
+  );
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 function parseJsonIntent(text: string): Intent {
   const trimmed = text.trim();
   const json = trimmed.startsWith("{")
@@ -124,25 +133,39 @@ export async function parseIntent(input: string): Promise<Intent> {
     return deterministicParse(input);
   }
 
-  try {
-    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: input,
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        temperature: 0,
-      },
-    });
+  const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+  const MAX_ATTEMPTS = 2;
 
-    const text = response.text;
-    if (!text) {
-      throw new Error("Gemini returned no text content.");
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const response = await ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: input,
+        config: {
+          systemInstruction: SYSTEM_PROMPT,
+          temperature: 0,
+        },
+      });
+
+      const text = response.text;
+      if (!text) {
+        throw new Error("Gemini returned no text content.");
+      }
+
+      return parseJsonIntent(text);
+    } catch (error) {
+      // Retry once on a transient API hiccup before falling back, so a momentary
+      // 503/overload doesn't surface during a normal run.
+      if (attempt < MAX_ATTEMPTS && isTransient(error)) {
+        await sleep(600);
+        continue;
+      }
+      process.stderr.write(
+        `Gemini unavailable (${(error as Error).message}), falling back to keyword parser.\n`,
+      );
+      return deterministicParse(input);
     }
-
-    return parseJsonIntent(text);
-  } catch (error) {
-    process.stderr.write(`Gemini unavailable (${(error as Error).message}), falling back to keyword parser.\n`);
-    return deterministicParse(input);
   }
+
+  return deterministicParse(input);
 }
